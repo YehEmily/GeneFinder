@@ -38,29 +38,12 @@ def get_reverse_complement(dna):
     'AAAGCGGGCAT'
     >>> get_reverse_complement("CCGCGTTCA")
     'TGAACGCGG'
-    """
-    def complement(nucleotide):
-        list_nucleotides = list(dna)
-        res = []
-        for item in list_nucleotides:
-            res.append(get_complement(item))
-        return res
-    
-    complement_dna = complement(dna)
-
-    def backwards(complement_dna):
-        res = []
-        index = len(complement_dna) - 1
-        while index < len(complement_dna) and index >= 0:
-            letter = complement_dna[index]
-            res.append(letter)
-            index = index - 1
-        return res
-
-    backwards_dna = backwards(complement_dna)
-
-    dna_string = ''.join(backwards_dna)
-    return dna_string
+    """    
+    backwards_dna = dna[::-1]
+    backwards_dna_complement = ''
+    for i in backwards_dna:
+        backwards_dna_complement += get_complement(i)
+    return backwards_dna_complement
 
 
 def rest_of_ORF(dna):
@@ -69,20 +52,35 @@ def rest_of_ORF(dna):
     first in frame stop codon.  If there is no in frame stop codon,
     returns the whole string.
     dna: a DNA sequence
-    returns: the open reading frame represented as a string"""
-    codons = ["TAG", "TAA", "TGA"]
-    def find_substring(dna,codons):
-        for item in codons:
-            index = dna.find(item)
-            if index != -1:
-                return index
-        return -1
+    returns: the open reading frame represented as a string
+    >>> rest_of_ORF("ATGTGAA")
+    'ATG'
+    >>> rest_of_ORF("ATGAGATAGG")
+    'ATGAGA'
+    """
+    stop_codons = ["TAG", "TAA", "TGA"]
+    index = 0
+    i = 0
+    codon_list = []
 
-    if find_substring(dna,codons) == -1:
+    while i < len(dna):
+        codon = dna[i:i+3]
+        codon_list.append(codon)
+        i += 3
+
+    for item in stop_codons:
+        if item in codon_list:
+            codon_index = codon_list.index(item)
+            if codon_index != (-1):
+                index = codon_index
+            else:
+        	    index = -1
+
+    if index == -1:
         return dna
     else:
-        open_reading_frame = dna[0:find_substring(dna,codons)]
-        return open_reading_frame
+        open_reading_frame = codon_list[0:index]
+        return ''.join(open_reading_frame)
 
 
 def find_all_ORFs_oneframe(dna):
@@ -98,28 +96,24 @@ def find_all_ORFs_oneframe(dna):
     'ATGAGA'
     """
     res = []
+    res_start = []
+    res_end = []
     split = [dna[i:i + 3] for i in range(0, len(dna), 3)]
-    codons = ["TAG", "TAA", "TGA"]
+    stop_codons = ["TAG", "TAA", "TGA"]
     start_codon = "ATG"
 
-    def find_substring_end(split,codons):
-        res_end = []
-        for item in codons:
-            if item in split:
-                res_end.append(split.index(item))
-        return res_end
+    for item in stop_codons:
+        if item in split:
+            res_end.append(split.index(item))
 
-    def find_substring_start(split,start_codon):
-        res_start = []
-        for i in range(0,len(split)):
-            if split[i] == start_codon:
-                res_start.append(i)
-        return res_start
+    for i in range(0,len(split)):
+        if split[i] == start_codon:
+            res_start.append(i)
 
-    for i in find_substring_start(split,start_codon):
-        for n in find_substring_end(split,codons):
+    for i in res_start:
+        for n in res_end:
             if i < n:
-                new_list = split[i:(n)]
+                new_list = split[i:n]
                 new_string = ''.join(new_list)
                 res.append(new_string)
             else:
@@ -142,56 +136,104 @@ def find_all_ORFs(dna):
     ['ATGCATGAATGTAGA', 'ATGTGCCC']
     """
     ORFs_list = []
+    res_start = []
+    res_end = []
+    test = []
     split1 = [dna[i:i + 3] for i in range(0, len(dna), 3)]
     split2 = [dna[i + 1:i + 4] for i in range(0, len(dna), 3)]
     split3 = [dna[i + 2:i + 5] for i in range(0, len(dna), 3)]
-    codons = ["TAG", "TAA", "TGA"]
+    stop_codons = ["TAG", "TAA", "TGA"]
     start_codon = "ATG"
 
-    def find_substring_end(split,codons):
-        res_end = []
-        test = []
-        for item in codons:
-            if item in split:
-                test.append(split.index(item))
-            else:
-                test.append(-1)
+    for item in stop_codons:
+        if item in split1:
+                test.append(split1.index(item))
+        else:
+            test.append(-1)
         maximum = max(test)
         res_end.append(maximum)
-        return res_end
+    
+    for item in stop_codons:
+        if item in split2:
+                test.append(split2.index(item))
+        else:
+            test.append(-1)
+        maximum = max(test)
+        res_end.append(maximum)
 
-    def find_substring_start(split,start_codon):
-        res_start = []
-        for i in range(0,len(split)):
-            if split[i] == start_codon:
-                res_start.append(i)
-        return res_start
+    for item in stop_codons:
+        if item in split3:
+                test.append(split3.index(item))
+        else:
+            test.append(-1)
+        maximum = max(test)
+        res_end.append(maximum)
 
-    def find_ORFs(split,start_codon,codons):
-        for i in find_substring_start(split,start_codon):
-            for n in find_substring_end(split,codons):
-                if len(find_substring_start(split, start_codon)) > 1:
-                    minimum = min(find_substring_start(split, start_codon))
-                    if minimum < n and (n-minimum) > 0:
-                        new_list = split[minimum:n]
-                        new_string = ''.join(new_list)
-                        ORFs_list.append(new_string)
+    for i in range(0,len(split1)):
+        if split1[i] == start_codon:
+            res_start.append(i)
+
+    for i in range(0,len(split2)):
+        if split2[i] == start_codon:
+            res_start.append(i)
+
+    for i in range(0,len(split3)):
+        if split3[i] == start_codon:
+            res_start.append(i)
+
+    for i in res_start:
+        for n in res_end:
+            if len(res_start) > 1:
+                minimum = min(res_start)
+                if minimum < n and (n-minimum) > 0:
+                    new_list = split1[minimum:n]
+                    new_string = ''.join(new_list)
+                    ORFs_list.append(new_string)
+            else:
+                if i < n:
+                    new_list = split1[i:n]
+                    new_string = ''.join(new_list)
+                    ORFs_list.append(new_string)
                 else:
-                    if i < n:
-                        new_list = split[i:n]
-                        new_string = ''.join(new_list)
-                        ORFs_list.append(new_string)
-                    else:
-                        new_list = split[i:]
-                        new_string = ''.join(new_list)
-                        ORFs_list.append(new_string)
+                    new_list = split1[i:]
+                    new_string = ''.join(new_list)
+                    ORFs_list.append(new_string)
 
-    ORFs1 = find_ORFs(split1,start_codon,codons)
-    ORFs2 = find_ORFs(split2,start_codon,codons)
-    ORFs3 = find_ORFs(split3,start_codon,codons)
-    ORFs_list.append(ORFs1)
-    ORFs_list.append(ORFs2)
-    ORFs_list.append(ORFs3)
+    for i in res_start:
+        for n in res_end:
+            if len(res_start) > 1:
+                minimum = min(res_start)
+                if minimum < n and (n-minimum) > 0:
+                    new_list = split2[minimum:n]
+                    new_string = ''.join(new_list)
+                    ORFs_list.append(new_string)
+            else:
+                if i < n:
+                    new_list = split2[i:n]
+                    new_string = ''.join(new_list)
+                    ORFs_list.append(new_string)
+                else:
+                    new_list = split2[i:]
+                    new_string = ''.join(new_list)
+                    ORFs_list.append(new_string)
+
+    for i in res_start:
+        for n in res_end:
+            if len(res_start) > 1:
+                minimum = min(res_start)
+                if minimum < n and (n-minimum) > 0:
+                    new_list = split3[minimum:n]
+                    new_string = ''.join(new_list)
+                    ORFs_list.append(new_string)
+            else:
+                if i < n:
+                    new_list = split3[i:n]
+                    new_string = ''.join(new_list)
+                    ORFs_list.append(new_string)
+                else:
+                    new_list = split3[i:]
+                    new_string = ''.join(new_list)
+                    ORFs_list.append(new_string)
 
     final_list = [x for x in ORFs_list if x is not None]
 
@@ -276,4 +318,7 @@ def gene_finder(dna):
 # print find_all_ORFs_oneframe("ATGCATGAATGTAGATAGATGTGCCC")
 # print find_all_ORFs("ATGCATGAATGTAG")
 # print find_all_ORFs_both_strands("ATGCGAATGTAGCATCAAA")
-print longest_ORF("ATGCGAATGTAGCATCAAA")
+# print longest_ORF("ATGCGAATGTAGCATCAAA")
+# print get_reverse_complement("CCGCGTTCA")
+# print rest_of_ORF("ATGTGAA")
+print find_all_ORFs_oneframe("ATGCATGAATGTAGATAGATGTGCCC")
