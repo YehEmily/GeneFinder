@@ -122,6 +122,45 @@ def find_all_ORFs_oneframe(dna):
                 res.append(new_string)
     return res
 
+def find_substring_end(split,stop_codons):
+    res_end = []
+    test = []
+    for item in stop_codons:
+    	if item in split:
+    		test.append(split.index(item))
+    	else:
+    		test.append(-1)
+    maximum = max(test)
+    res_end.append(maximum)
+    return res_end
+
+def find_substring_start(split,start_codon):
+    res_start = []
+    for i in range(0,len(split)):
+    	if split[i] == start_codon:
+    		res_start.append(i)
+    return res_start
+
+def find_ORFs(split,start_codon,stop_codons):
+    ORFs_list = []
+    for i in find_substring_start(split,start_codon):
+        for n in find_substring_end(split,stop_codons):
+    	    if len(find_substring_start(split, start_codon)) > 1:
+    		    minimum = min(find_substring_start(split, start_codon))
+    		    if minimum < n:
+    		        new_list = split[minimum:n]
+    		        new_string = ''.join(new_list)
+    		        ORFs_list.append(new_string)
+    	    else:
+    	        if i < n:
+    		        new_list = split[i:n]
+    		        new_string = ''.join(new_list)
+    		        ORFs_list.append(new_string)
+    	        else:
+    		        new_list = split[i:]
+    		        new_string = ''.join(new_list)
+    		        ORFs_list.append(new_string)
+    return ORFs_list
 
 def find_all_ORFs(dna):
     """ Finds all non-nested open reading frames in the given DNA
@@ -132,112 +171,24 @@ def find_all_ORFs(dna):
         another ORF, it should not be included in the returned list of ORFs.
         dna: a DNA sequence
         returns: a list of non-nested ORFs
-    >>> find_all_ORFs_oneframe("ATGCATGAATGTAGATAGATGTGCCC")
-    ['ATGCATGAATGTAGA', 'ATGTGCCC']
+    >>> find_all_ORFs("ATGCATGAATGTAG")
+    ['ATGCATGAATGTAG', 'ATGAATGTAG', 'ATG']
     """
     ORFs_list = []
-    res_start = []
-    res_end = []
-    test = []
     split1 = [dna[i:i + 3] for i in range(0, len(dna), 3)]
     split2 = [dna[i + 1:i + 4] for i in range(0, len(dna), 3)]
     split3 = [dna[i + 2:i + 5] for i in range(0, len(dna), 3)]
     stop_codons = ["TAG", "TAA", "TGA"]
     start_codon = "ATG"
 
-    for item in stop_codons:
-        if item in split1:
-                test.append(split1.index(item))
-        else:
-            test.append(-1)
-        maximum = max(test)
-        res_end.append(maximum)
-    
-    for item in stop_codons:
-        if item in split2:
-                test.append(split2.index(item))
-        else:
-            test.append(-1)
-        maximum = max(test)
-        res_end.append(maximum)
-
-    for item in stop_codons:
-        if item in split3:
-                test.append(split3.index(item))
-        else:
-            test.append(-1)
-        maximum = max(test)
-        res_end.append(maximum)
-
-    for i in range(0,len(split1)):
-        if split1[i] == start_codon:
-            res_start.append(i)
-
-    for i in range(0,len(split2)):
-        if split2[i] == start_codon:
-            res_start.append(i)
-
-    for i in range(0,len(split3)):
-        if split3[i] == start_codon:
-            res_start.append(i)
-
-    for i in res_start:
-        for n in res_end:
-            if len(res_start) > 1:
-                minimum = min(res_start)
-                if minimum < n and (n-minimum) > 0:
-                    new_list = split1[minimum:n]
-                    new_string = ''.join(new_list)
-                    ORFs_list.append(new_string)
-            else:
-                if i < n:
-                    new_list = split1[i:n]
-                    new_string = ''.join(new_list)
-                    ORFs_list.append(new_string)
-                else:
-                    new_list = split1[i:]
-                    new_string = ''.join(new_list)
-                    ORFs_list.append(new_string)
-
-    for i in res_start:
-        for n in res_end:
-            if len(res_start) > 1:
-                minimum = min(res_start)
-                if minimum < n and (n-minimum) > 0:
-                    new_list = split2[minimum:n]
-                    new_string = ''.join(new_list)
-                    ORFs_list.append(new_string)
-            else:
-                if i < n:
-                    new_list = split2[i:n]
-                    new_string = ''.join(new_list)
-                    ORFs_list.append(new_string)
-                else:
-                    new_list = split2[i:]
-                    new_string = ''.join(new_list)
-                    ORFs_list.append(new_string)
-
-    for i in res_start:
-        for n in res_end:
-            if len(res_start) > 1:
-                minimum = min(res_start)
-                if minimum < n and (n-minimum) > 0:
-                    new_list = split3[minimum:n]
-                    new_string = ''.join(new_list)
-                    ORFs_list.append(new_string)
-            else:
-                if i < n:
-                    new_list = split3[i:n]
-                    new_string = ''.join(new_list)
-                    ORFs_list.append(new_string)
-                else:
-                    new_list = split3[i:]
-                    new_string = ''.join(new_list)
-                    ORFs_list.append(new_string)
+    ORFs1 = find_ORFs(split1,start_codon,stop_codons)
+    ORFs2 = find_ORFs(split2,start_codon,stop_codons)
+    ORFs3 = find_ORFs(split3,start_codon,stop_codons)
+    ORFs_list = ORFs1 + ORFs2 + ORFs3
 
     final_list = [x for x in ORFs_list if x is not None]
 
-    res = list(set(final_list))
+    res = final_list
     return res
 
 
@@ -259,7 +210,8 @@ def find_all_ORFs_both_strands(dna):
 
     strand2 = find_all_ORFs(new_string)
     res = strand1 + strand2
-    return res
+    final_res = list(set(res))
+    return final_res
 
 def longest_ORF(dna):
     """ Finds the longest ORF on both strands of the specified DNA and returns it
@@ -321,4 +273,4 @@ def gene_finder(dna):
 # print longest_ORF("ATGCGAATGTAGCATCAAA")
 # print get_reverse_complement("CCGCGTTCA")
 # print rest_of_ORF("ATGTGAA")
-print find_all_ORFs_oneframe("ATGCATGAATGTAGATAGATGTGCCC")
+# print find_all_ORFs_oneframe("ATGCATGAATGTAGATAGATGTGCCC")
